@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcribe Studio</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --serif: 'Source Serif 4', Georgia, serif;
+      --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+      --bg: #f6f5f2;
+      --surface: #ffffff;
+      --ink: #19191b;
+      --ink-2: #56565d;
+      --ink-3: #8b8b92;
+      --line: #e4e2dc;
+      --line-2: #efede8;
+      --hover: #f3f2ee;
+      --accent: #c4410c;
+      --accent-ink: #9c3209;
+      --accent-weak: #fbeade;
+      --region: #e9e6df;
+      --ok: #2e7a4d;
+      --warn: #a76300;
+      --bad: #b42318;
+      --header-h: 56px;
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131314;
+        --surface: #1b1b1d;
+        --ink: #ececee;
+        --ink-2: #a8a8af;
+        --ink-3: #75757c;
+        --line: #2c2c30;
+        --line-2: #232326;
+        --hover: #222225;
+        --accent: #ef7440;
+        --accent-ink: #f59a70;
+        --accent-weak: #35221a;
+        --region: #2e2e33;
+        --ok: #5cbf86;
+        --warn: #e0a345;
+        --bad: #f0796c;
+        color-scheme: dark;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font: inherit; color: inherit; }
+    .d-none { display: none !important; }
+    .mono { font-family: var(--mono); font-feature-settings: 'zero' 0; }
+
+    /* ---------- Header ---------- */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      height: var(--header-h);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: saturate(140%) blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar-inner {
+      max-width: 960px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 16px;
+    }
+    .brand-mark span {
+      width: 3px;
+      border-radius: 1px;
+      background: var(--ink);
+    }
+    .brand-mark span:nth-child(1) { height: 7px; }
+    .brand-mark span:nth-child(2) { height: 16px; }
+    .brand-mark span:nth-child(3) { height: 11px; background: var(--accent); }
+    .brand-mark span:nth-child(4) { height: 5px; }
+    .engine-tag {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .engine-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+
+    /* ---------- Layout ---------- */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 96px;
+    }
+
+    .page-head { margin-bottom: 20px; }
+    .page-head h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px;
+    }
+    .page-head p {
+      margin: 0;
+      color: var(--ink-2);
+      max-width: 560px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    /* ---------- Upload ---------- */
+    .drop-zone {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 36px 32px;
+      cursor: pointer;
+      border-radius: 10px 10px 0 0;
+      transition: background-color .15s ease;
+      outline: none;
+    }
+    .drop-zone:hover, .drop-zone:focus-visible { background: var(--hover); }
+    .drop-zone.dragover {
+      background: var(--accent-weak);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .drop-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      color: var(--ink-2);
+      background: var(--bg);
+    }
+    .drop-title { font-weight: 500; margin: 0; }
+    .drop-title u {
+      text-decoration-color: var(--accent);
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 3px;
+    }
+    .drop-sub {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--ink-3);
+    }
+
+    .file-row {
+      padding: 20px 24px;
+      border-radius: 10px 10px 0 0;
+    }
+    .file-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .file-meta .drop-icon { width: 40px; height: 40px; font-size: 18px; }
+    .file-name {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-size { font-size: 13px; color: var(--ink-3); }
+    .file-meta > div:nth-child(2) { min-width: 0; flex: 1; }
+    audio { width: 100%; height: 36px; display: block; }
+
+    .form-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 24px;
+      border-top: 1px solid var(--line);
+      background: var(--line-2);
+      border-radius: 0 0 10px 10px;
+    }
+    .form-foot small { color: var(--ink-3); font-size: 13px; }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color .12s ease, border-color .12s ease;
+    }
+    .btn:hover:not(:disabled) { background: var(--hover); border-color: color-mix(in srgb, var(--line) 60%, var(--ink-3)); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn-primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--bg);
+      padding: 0 18px;
+    }
+    .btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--bg)); border-color: transparent; }
+    .btn-ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
+    .btn-icon { width: 30px; height: 30px; padding: 0; color: var(--ink-3); }
+    .btn-icon:hover:not(:disabled) { color: var(--bad); }
+
+    .spinner {
+      width: 13px;
+      height: 13px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- Job ---------- */
+    .job {
+      margin-top: 16px;
+      padding: 18px 24px;
+    }
+    .job-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .job-title { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+    .status::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ink-3);
+    }
+    .status-processing::before { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+    .status-completed::before { background: var(--ok); }
+    .status-failed { color: var(--bad); }
+    .status-failed::before { background: var(--bad); }
+    @keyframes pulse { 50% { opacity: .3; } }
+
+    .progress {
+      height: 4px;
+      background: var(--line-2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--ink-2);
+      transition: width .4s ease;
+    }
+    .progress-bar.is-active { background: var(--accent); }
+    .progress-bar.is-done { background: var(--ok); }
+    .progress-bar.is-failed { background: var(--bad); }
+    .job-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .job-foot .mono { color: var(--ink-3); font-size: 12px; }
+    .job-actions { display: flex; gap: 6px; }
+
+    /* ---------- Notice ---------- */
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      border-left-width: 3px;
+      background: var(--surface);
+      font-size: 14px;
+    }
+    .notice i { margin-top: 1px; }
+    .notice-success { border-left-color: var(--ok); }
+    .notice-success i { color: var(--ok); }
+    .notice-danger { border-left-color: var(--bad); }
+    .notice-danger i { color: var(--bad); }
+    .notice-warning { border-left-color: var(--warn); }
+    .notice-warning i { color: var(--warn); }
+    .notice-info { border-left-color: var(--ink-3); }
+    .notice-info i { color: var(--ink-2); }
+
+    /* ---------- Results ---------- */
+    #resultsStudio { margin-top: 48px; scroll-margin-top: calc(var(--header-h) + 16px); }
+
+    .result-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+    .result-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+      word-break: break-word;
+    }
+    .result-meta {
+      margin-top: 6px;
+      font-size: 13.5px;
+      color: var(--ink-2);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+    }
+    .result-meta > span + span::before {
+      content: '·';
+      margin-right: 14px;
+      color: var(--ink-3);
+    }
+    .export { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Transport (sticky timeline) */
+    .transport {
+      position: sticky;
+      top: var(--header-h);
+      z-index: 20;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 16px;
+      margin: 0 -24px;
+      padding: 14px 24px;
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    .play-main {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--ink);
+      color: var(--bg);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .play-main:hover { background: var(--accent); color: #fff; }
+    .play-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .play-main i { line-height: 1; }
+
+    .track-wrap { position: relative; min-width: 0; }
+    .timeline-track-wrapper {
+      position: relative;
+      height: 30px;
+      border-radius: 4px;
+      background: var(--line-2);
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+    }
+    .timeline-chunk {
+      position: absolute;
+      top: 7px;
+      bottom: 7px;
+      background: var(--region);
+      border-radius: 2px;
+      box-shadow: 1px 0 0 var(--line-2), -1px 0 0 var(--line-2);
+      transition: background-color .15s ease, top .15s ease, bottom .15s ease;
+    }
+    .timeline-chunk:hover { background: color-mix(in srgb, var(--region) 60%, var(--ink-3)); top: 4px; bottom: 4px; }
+    .timeline-chunk.active-chunk { background: var(--accent); top: 4px; bottom: 4px; }
+    .timeline-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      background: var(--ink);
+      pointer-events: none;
+      z-index: 5;
+      transition: left .2s linear;
+    }
+    .track-scale {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+    .timeline-hover-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      max-width: 300px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .12s ease;
+      z-index: 25;
+    }
+    .timeline-hover-tooltip.show { opacity: 1; visibility: visible; }
+
+    .clock { text-align: right; font-family: var(--mono); font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+    .clock strong { color: var(--ink); font-weight: 500; }
+    .clock div { font-size: 11.5px; margin-top: 2px; }
+
+    /* View switch */
+    .view-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 28px 0 8px;
+    }
+    .switch {
+      display: inline-flex;
+      padding: 3px;
+      gap: 2px;
+      border-radius: 8px;
+      background: var(--line-2);
+      border: 1px solid var(--line);
+    }
+    .switch button {
+      border: none;
+      background: transparent;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+      cursor: pointer;
+    }
+    .switch button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+    .view-bar small { font-size: 13px; color: var(--ink-3); }
+
+    /* Segments */
+    .segment-item {
+      display: grid;
+      grid-template-columns: 92px 1fr auto;
+      gap: 16px;
+      align-items: baseline;
+      padding: 10px 12px;
+      margin: 0 -12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color .12s ease;
+    }
+    .segment-item:hover { background: var(--hover); }
+    .segment-item.active-segment { background: var(--accent-weak); }
+    .seg-gutter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      top: -1px;
+    }
+    .btn-play-pause {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink-2);
+      display: grid;
+      place-items: center;
+      padding: 0;
+      font-size: 13px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .12s ease;
+      flex-shrink: 0;
+    }
+    .btn-play-pause i { line-height: 1; }
+    .segment-item:hover .btn-play-pause,
+    .segment-item.active-segment .btn-play-pause,
+    .btn-play-pause:focus-visible { opacity: 1; }
+    .segment-item.active-segment .btn-play-pause { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg-time { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); }
+    .segment-item.active-segment .seg-time { color: var(--accent-ink); }
+    .seg-text {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--ink);
+      word-break: break-word;
+    }
+    .seg-conf {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink-3);
+    }
+    .seg-conf.is-low { color: var(--warn); }
+
+    .plain {
+      padding: 4px 0;
+    }
+    .transcript-text {
+      margin: 0;
+      max-width: 68ch;
+      font-family: var(--serif);
+      font-size: 17.5px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+    .empty { padding: 32px 0; color: var(--ink-3); }
+
+    /* ---------- Small screens ---------- */
+    @media (max-width: 640px) {
+      .topbar-inner, main { padding-left: 16px; padding-right: 16px; }
+      main { padding-top: 28px; }
+      .drop-zone { padding: 28px 20px; }
+      .file-row, .form-foot, .job { padding-left: 16px; padding-right: 16px; }
+      .form-foot small { display: none; }
+      .form-foot .btn-primary { width: 100%; }
+      .transport { margin: 0 -16px; padding: 12px 16px; grid-template-columns: auto 1fr; }
+      .clock { display: none; }
+      .segment-item { grid-template-columns: 1fr auto; gap: 4px 12px; }
+      .seg-gutter { grid-column: 1; }
+      .seg-text { grid-column: 1 / -1; grid-row: 2; font-size: 16px; }
+      .seg-conf { grid-column: 2; grid-row: 1; }
+      .btn-play-pause { opacity: 1; }
+      .view-bar small { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        Transcribe Studio
+      </div>
+      <span class="engine-tag">faster-whisper</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-head">
+      <h1>New transcription</h1>
+      <p>Upload a recording to get a timestamped transcript you can play back, check and export as TXT, SRT or JSON.</p>
+    </div>
+
+    <form id="transcribeForm" class="panel">
+      <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Choose an audio file">
+        <input type="file" id="audioFileInput" class="d-none" accept=".wav,.mp3,.m4a,.flac,.ogg,audio/*">
+        <div class="drop-icon"><i class="bi bi-file-earmark-music"></i></div>
+        <div>
+          <p class="drop-title" id="dropTitle">Drop an audio file here, or <u>browse</u></p>
+          <p class="drop-sub" id="dropSubtitle">WAV, MP3, M4A, FLAC or OGG</p>
+        </div>
+      </div>
+
+      <div id="previewCard" class="file-row d-none">
+        <div class="file-meta">
+          <div class="drop-icon"><i class="bi bi-file-earmark-music"></i></div>
+          <div>
+            <div class="file-name" id="fileNameLabel">-</div>
+            <div class="file-size mono" id="fileSizeLabel">-</div>
+          </div>
+          <button type="button" class="btn btn-icon btn-ghost" id="removeFileBtn" title="Remove file" aria-label="Remove file">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <audio id="audioPreview" controls></audio>
+      </div>
+
+      <div class="form-foot">
+        <small>Long recordings are split into parts and processed in the background.</small>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled title="Choose an audio file first">
+          <span class="spinner d-none" id="btnSpinner" role="status"></span>
+          <span id="btnIcon" class="d-none"></span>
+          <span id="btnText">Transcribe</span>
+        </button>
+      </div>
+    </form>
+
+    <section id="jobCard" class="panel job d-none" aria-live="polite">
+      <div class="job-top">
+        <div class="job-title">
+          Transcription
+          <span class="status" id="jobStatusBadge">queued</span>
+        </div>
+        <div class="job-actions">
+          <button type="button" class="btn d-none" id="jobRetryBtn"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+          <button type="button" class="btn btn-ghost d-none" id="jobCancelBtn">Cancel</button>
+        </div>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Transcription progress">
+        <div class="progress-bar" id="jobProgressBar" style="width: 0%"></div>
+      </div>
+      <div class="job-foot">
+        <span id="jobDetail">Waiting for a worker…</span>
+        <span class="mono" id="jobIdLabel"></span>
+      </div>
+    </section>
+
+    <div id="alertBox" class="notice d-none" role="alert">
+      <i id="alertIcon" class="bi"></i>
+      <span id="alertMessage"></span>
+    </div>
+
+    <section id="resultsStudio" class="d-none">
+      <div class="result-head">
+        <div>
+          <div class="eyebrow">Transcript</div>
+          <h2 class="result-title" id="resultTitle">Untitled</h2>
+          <div class="result-meta">
+            <span class="mono" id="statDuration">-</span>
+            <span><span id="statSegments">-</span> segments</span>
+            <span id="transcriptStats">-</span>
+            <span id="statEngine">-</span>
+          </div>
+        </div>
+        <div class="export">
+          <button class="btn" id="copyTextBtn"><i class="bi bi-clipboard"></i> Copy</button>
+          <button class="btn" id="downloadTxtBtn">.txt</button>
+          <button class="btn" id="downloadSrtBtn">.srt</button>
+          <button class="btn" id="downloadJsonBtn">.json</button>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="play-main" id="timelineMasterPlayBtn" title="Play / pause" aria-label="Play or pause">
+          <i class="bi bi-play-fill" id="timelineMasterPlayIcon"></i>
+        </button>
+        <div class="track-wrap" id="timelineTrackContainer">
+          <div class="timeline-track-wrapper" id="timelineTrack" title="Click to seek">
+            <div class="timeline-playhead" id="timelinePlayhead" style="left: 0%;"></div>
+          </div>
+          <div class="timeline-hover-tooltip" id="timelineTooltip"></div>
+          <div class="track-scale"><span>00:00</span><span id="timelineEndLabel">00:00</span></div>
+        </div>
+        <div class="clock">
+          <strong id="timelineTimeDisplay">00:00.00</strong> / <span id="timelineDurationDisplay">00:00.00</span>
+          <div id="timelineActiveLabel">Ready</div>
+        </div>
+      </div>
+
+      <div class="view-bar">
+        <div class="switch" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-view="segmentsView">Segments</button>
+          <button type="button" role="tab" aria-selected="false" data-view="plainView">Plain text</button>
+        </div>
+        <small>Click a line to play from there</small>
+      </div>
+
+      <div id="segmentsView">
+        <div id="segmentsContainer"></div>
+      </div>
+      <div id="plainView" class="plain d-none">
+        <p class="transcript-text" id="fullTranscriptText"></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let transcriptionData = null;
+    let selectedFile = null;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('audioFileInput');
+    const previewCard = document.getElementById('previewCard');
+    const fileNameLabel = document.getElementById('fileNameLabel');
+    const fileSizeLabel = document.getElementById('fileSizeLabel');
+    const removeFileBtn = document.getElementById('removeFileBtn');
+    const audioPreview = document.getElementById('audioPreview');
+
+    const form = document.getElementById('transcribeForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnText = document.getElementById('btnText');
+
+    const alertBox = document.getElementById('alertBox');
+    const alertIcon = document.getElementById('alertIcon');
+    const alertMessage = document.getElementById('alertMessage');
+
+    const resultsStudio = document.getElementById('resultsStudio');
+    const resultTitle = document.getElementById('resultTitle');
+    const statDuration = document.getElementById('statDuration');
+    const statSegments = document.getElementById('statSegments');
+    const statEngine = document.getElementById('statEngine');
+    const fullTranscriptText = document.getElementById('fullTranscriptText');
+    const transcriptStats = document.getElementById('transcriptStats');
+    const segmentsContainer = document.getElementById('segmentsContainer');
+
+    const copyTextBtn = document.getElementById('copyTextBtn');
+    const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+    const downloadSrtBtn = document.getElementById('downloadSrtBtn');
+    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+
+    // Background job elements
+    const jobCard = document.getElementById('jobCard');
+    const jobStatusBadge = document.getElementById('jobStatusBadge');
+    const jobProgressBar = document.getElementById('jobProgressBar');
+    const jobDetail = document.getElementById('jobDetail');
+    const jobIdLabel = document.getElementById('jobIdLabel');
+    const jobRetryBtn = document.getElementById('jobRetryBtn');
+    const jobCancelBtn = document.getElementById('jobCancelBtn');
+    const API_BASE = '/api/v1/transcriptions';
+    let currentJobId = null;
+    let eventSource = null;
+    let pollTimer = null;
+
+    // Timeline elements
+    const timelineTrackContainer = document.getElementById('timelineTrackContainer');
+    const timelineTrack = document.getElementById('timelineTrack');
+    const timelinePlayhead = document.getElementById('timelinePlayhead');
+    const timelineTooltip = document.getElementById('timelineTooltip');
+    const timelineActiveLabel = document.getElementById('timelineActiveLabel');
+    const timelineTimeDisplay = document.getElementById('timelineTimeDisplay');
+    const timelineDurationDisplay = document.getElementById('timelineDurationDisplay');
+    const timelineEndLabel = document.getElementById('timelineEndLabel');
+    const timelineMasterPlayBtn = document.getElementById('timelineMasterPlayBtn');
+    const timelineMasterPlayIcon = document.getElementById('timelineMasterPlayIcon');
+
+    const PLAY_ICON = 'bi bi-play-fill';
+    const PAUSE_ICON = 'bi bi-pause-fill';
+
+    // View switch (segments / plain text)
+    document.querySelectorAll('.switch button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.switch button').forEach(b => {
+          const on = b === btn;
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+          document.getElementById(b.dataset.view).classList.toggle('d-none', !on);
+        });
+      });
+    });
+
+    // Drag and drop handlers
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function clearTranscriptionData() {
+      transcriptionData = null;
+      resultsStudio.classList.add('d-none');
+      fullTranscriptText.textContent = '';
+      transcriptStats.textContent = '-';
+      segmentsContainer.innerHTML = '';
+      statDuration.textContent = '-';
+      statSegments.textContent = '-';
+      statEngine.textContent = '-';
+
+      timelineTrack.querySelectorAll('.timeline-chunk').forEach(c => c.remove());
+      timelinePlayhead.style.left = '0%';
+      timelineTimeDisplay.textContent = '00:00.00';
+      timelineDurationDisplay.textContent = '00:00.00';
+      timelineEndLabel.textContent = '00:00';
+      timelineActiveLabel.textContent = 'Ready';
+      timelineMasterPlayIcon.className = PLAY_ICON;
+      timelineTooltip.classList.remove('show');
+
+      hideAlert();
+    }
+
+    function handleFileSelect(file) {
+      clearTranscriptionData();
+      resetJobCard();
+      selectedFile = file;
+      setSubmitBusy(false);
+      fileNameLabel.textContent = file.name;
+      fileSizeLabel.textContent = formatBytes(file.size);
+
+      audioPreview.src = URL.createObjectURL(file);
+
+      previewCard.classList.remove('d-none');
+      dropZone.classList.add('d-none');
+    }
+
+    removeFileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTranscriptionData();
+      resetJobCard();
+      selectedFile = null;
+      setSubmitBusy(false);
+      fileInput.value = '';
+      audioPreview.pause();
+      audioPreview.src = '';
+      previewCard.classList.add('d-none');
+      dropZone.classList.remove('d-none');
+    });
+
+    // Time formatting
+    function formatTime(seconds) {
+      const s = Math.max(0, Number(seconds) || 0);
+      const m = Math.floor(s / 60);
+      const remSec = (s % 60).toFixed(2);
+      return `${String(m).padStart(2, '0')}:${String(remSec).padStart(5, '0')}`;
+    }
+
+    function formatClock(seconds) {
+      const s = Math.max(0, Math.floor(Number(seconds) || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = String(s % 60).padStart(2, '0');
+      return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${String(m).padStart(2, '0')}:${sec}`;
+    }
+
+    function formatSrtTime(seconds) {
+      const s = Math.max(0, Number(seconds) || 0);
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = Math.floor(s % 60);
+      const ms = Math.floor((s % 1) * 1000);
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+    }
+
+    const ALERT_ICONS = {
+      danger: 'bi bi-exclamation-circle-fill',
+      warning: 'bi bi-exclamation-triangle-fill',
+      success: 'bi bi-check-circle-fill',
+      info: 'bi bi-info-circle-fill'
+    };
+
+    function showAlert(msg, type = 'info') {
+      alertBox.className = `notice notice-${type}`;
+      alertIcon.className = ALERT_ICONS[type] || ALERT_ICONS.info;
+      alertMessage.textContent = msg;
+    }
+
+    function hideAlert() {
+      alertBox.classList.add('d-none');
+    }
+
+    // Escape untrusted text before inserting it into HTML
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+      ));
+    }
+
+    function setSubmitBusy(busy, label) {
+      submitBtn.disabled = busy || !selectedFile;
+      btnSpinner.classList.toggle('d-none', !busy);
+      btnText.textContent = busy ? (label || 'Transcribing…') : 'Transcribe';
+      submitBtn.title = selectedFile ? '' : 'Choose an audio file first';
+    }
+
+    function apiErrorMessage(data, fallback) {
+      if (data && data.error && data.error.message) return data.error.message;
+      if (data && typeof data.detail === 'string') return data.detail;
+      return fallback;
+    }
+
+    function stopJobUpdates() {
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    function resetJobCard() {
+      stopJobUpdates();
+      currentJobId = null;
+      jobCard.classList.add('d-none');
+    }
+
+    function renderJob(job) {
+      jobCard.classList.remove('d-none');
+      const status = job.status || 'queued';
+      const pct = Math.max(0, Math.min(100, Number(job.progress) || 0));
+      jobStatusBadge.className = `status status-${status}`;
+      jobStatusBadge.textContent = status;
+      jobProgressBar.style.width = `${pct}%`;
+      jobProgressBar.classList.toggle('is-active', status === 'processing' || status === 'queued');
+      jobProgressBar.classList.toggle('is-done', status === 'completed');
+      jobProgressBar.classList.toggle('is-failed', status === 'failed');
+      jobIdLabel.textContent = job.job_id ? job.job_id.slice(0, 8) : '';
+
+      const chunks = job.chunks || {};
+      if (status === 'queued') {
+        jobDetail.textContent = 'Queued, waiting for a worker…';
+      } else if (status === 'processing') {
+        jobDetail.textContent = chunks.total > 1
+          ? `${chunks.completed} of ${chunks.total} parts done · ${pct.toFixed(0)}%`
+          : `Processing · ${pct.toFixed(0)}%`;
+      } else if (status === 'completed') {
+        jobDetail.textContent = 'Done';
+      } else if (status === 'failed') {
+        jobDetail.textContent = job.error || 'Transcription failed.';
+      } else if (status === 'cancelled') {
+        jobDetail.textContent = 'Cancelled';
+      }
+
+      const active = status === 'queued' || status === 'processing';
+      jobCancelBtn.classList.toggle('d-none', !active);
+      jobRetryBtn.classList.toggle('d-none', !job.can_retry);
+      setSubmitBusy(active, status === 'queued' ? 'Queued…' : 'Transcribing…');
+    }
+
+    async function handleTerminal(job) {
+      stopJobUpdates();
+      renderJob(job);
+      if (job.status === 'completed') {
+        try {
+          const response = await fetch(`${API_BASE}/${job.job_id}/result`);
+          const data = await response.json();
+          if (!response.ok) throw new Error(apiErrorMessage(data, 'Failed to load the transcript.'));
+          transcriptionData = data;
+          displayResults(data);
+        } catch (err) {
+          showAlert(err.message || 'Failed to load the transcript.', 'danger');
+        }
+      } else if (job.status === 'failed') {
+        const hint = job.can_retry ? ' You can retry; completed parts will not be reprocessed.' : '';
+        showAlert(`${job.error || 'Transcription failed.'}${hint}`, 'danger');
+      } else if (job.status === 'cancelled') {
+        showAlert('Transcription cancelled.', 'info');
+      }
+    }
+
+    function onJobUpdate(job) {
+      if (!job || job.job_id !== currentJobId) return;
+      if (['completed', 'failed', 'cancelled'].includes(job.status)) {
+        handleTerminal(job);
+      } else {
+        renderJob(job);
+      }
+    }
+
+    // Fallback when SSE is unavailable (old browser, proxy buffering, connection errors)
+    function startPolling(jobId) {
+      if (pollTimer) return;
+      pollTimer = setInterval(async () => {
+        try {
+          const response = await fetch(`${API_BASE}/${jobId}`);
+          if (response.ok) onJobUpdate(await response.json());
+        } catch (_) { /* keep polling */ }
+      }, 2000);
+    }
+
+    function watchJob(jobId) {
+      stopJobUpdates();
+      currentJobId = jobId;
+      if (!window.EventSource) { startPolling(jobId); return; }
+      eventSource = new EventSource(`${API_BASE}/${jobId}/events`);
+      ['status', 'progress', 'completed', 'failed', 'cancelled'].forEach(name => {
+        eventSource.addEventListener(name, (e) => {
+          try { onJobUpdate(JSON.parse(e.data)); } catch (_) { /* ignore malformed event */ }
+        });
+      });
+      eventSource.onerror = () => {
+        // EventSource reconnects on its own; poll meanwhile so the UI never stalls.
+        if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+          eventSource = null;
+        }
+        startPolling(jobId);
+      };
+    }
+
+    // Form submit: upload, receive a job id (202), then follow progress via SSE
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!selectedFile) {
+        showAlert('Choose an audio file first.', 'warning');
+        return;
+      }
+
+      hideAlert();
+      resetJobCard();
+      setSubmitBusy(true, 'Uploading…');
+
+      const formData = new FormData();
+      formData.append('audio_file', selectedFile);
+
+      try {
+        const response = await fetch(API_BASE, { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (data && data.job_id) {
+            currentJobId = data.job_id;
+            renderJob({ job_id: data.job_id, status: 'failed', progress: 0, can_retry: true,
+                        error: apiErrorMessage(data, 'Failed to queue transcription.') });
+          }
+          throw new Error(apiErrorMessage(data, 'Failed to transcribe audio.'));
+        }
+
+        renderJob({ job_id: data.job_id, status: data.status, progress: 0 });
+        watchJob(data.job_id);
+      } catch (err) {
+        setSubmitBusy(false);
+        showAlert(err.message || 'An unexpected error occurred.', 'danger');
+      }
+    });
+
+    jobRetryBtn.addEventListener('click', async () => {
+      if (!currentJobId) return;
+      hideAlert();
+      jobRetryBtn.disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/${currentJobId}/retry`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(apiErrorMessage(data, 'Retry failed.'));
+        renderJob({ job_id: currentJobId, status: 'queued', progress: 0 });
+        watchJob(currentJobId);
+      } catch (err) {
+        showAlert(err.message || 'Retry failed.', 'danger');
+      } finally {
+        jobRetryBtn.disabled = false;
+      }
+    });
+
+    jobCancelBtn.addEventListener('click', async () => {
+      if (!currentJobId) return;
+      jobCancelBtn.disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/${currentJobId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(apiErrorMessage(data, 'Cancel failed.'));
+        showAlert(data.message || 'Transcription cancelled.', 'info');
+      } catch (err) {
+        showAlert(err.message || 'Cancel failed.', 'danger');
+      } finally {
+        jobCancelBtn.disabled = false;
+      }
+    });
+
+    // Render results
+    function displayResults(data) {
+      resultsStudio.classList.remove('d-none');
+      const segments = data.segments || [];
+
+      const totalDuration = Number(data.duration) || (segments.length ? segments[segments.length - 1].end : 0) || 1;
+
+      resultTitle.textContent = data.filename || (selectedFile && selectedFile.name) || 'Untitled';
+      statDuration.textContent = formatClock(totalDuration);
+      statSegments.textContent = segments.length;
+      statEngine.textContent = data.engine || 'faster-whisper';
+
+      timelineDurationDisplay.textContent = formatTime(totalDuration);
+      timelineEndLabel.textContent = formatClock(totalDuration);
+      timelineTimeDisplay.textContent = formatTime(audioPreview.currentTime || 0);
+
+      const text = data.text || '';
+      fullTranscriptText.textContent = text || '(No speech detected)';
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      transcriptStats.textContent = `${words.toLocaleString()} words`;
+
+      // Timeline regions
+      timelineTrack.querySelectorAll('.timeline-chunk').forEach(c => c.remove());
+      segments.forEach((seg, idx) => {
+        const chunk = document.createElement('div');
+        chunk.className = 'timeline-chunk';
+        chunk.dataset.start = seg.start;
+        chunk.dataset.end = seg.end;
+        chunk.dataset.idx = idx;
+
+        const leftPct = Math.max(0, Math.min(100, (seg.start / totalDuration) * 100));
+        const widthPct = Math.max(0.4, Math.min(100 - leftPct, ((seg.end - seg.start) / totalDuration) * 100));
+        chunk.style.left = `${leftPct.toFixed(2)}%`;
+        chunk.style.width = `${widthPct.toFixed(2)}%`;
+
+        chunk.addEventListener('mouseenter', () => {
+          const snippet = seg.text.length > 48 ? seg.text.slice(0, 48).trim() + '…' : seg.text;
+          timelineTooltip.textContent = `${formatClock(seg.start)}  ${snippet}`;
+          timelineTooltip.style.left = `${(leftPct + widthPct / 2).toFixed(2)}%`;
+          timelineTooltip.classList.add('show');
+        });
+
+        chunk.addEventListener('click', (e) => {
+          e.stopPropagation();
+          audioPreview.currentTime = seg.start;
+          audioPreview.play();
+          updatePlaybackIcons();
+        });
+
+        timelineTrack.appendChild(chunk);
+      });
+
+      // Segment list
+      segmentsContainer.innerHTML = '';
+      if (segments.length > 0) {
+        segments.forEach((seg) => {
+          const item = document.createElement('div');
+          item.className = 'segment-item';
+          item.dataset.start = seg.start;
+          item.dataset.end = seg.end;
+
+          const hasConf = seg.confidence !== null && seg.confidence !== undefined;
+          const conf = hasConf ? Math.round(seg.confidence * 100) : null;
+
+          item.innerHTML = `
+            <div class="seg-gutter">
+              <button class="btn-play-pause" type="button" aria-label="Play segment">
+                <i class="${PLAY_ICON}"></i>
+              </button>
+              <span class="seg-time">${formatClock(seg.start)}</span>
+            </div>
+            <p class="seg-text">${escapeHtml(seg.text.trim())}</p>
+            ${hasConf ? `<span class="seg-conf${conf < 60 ? ' is-low' : ''}" title="Confidence">${conf}%</span>` : '<span></span>'}
+          `;
+
+          item.addEventListener('click', () => {
+            const isPlaying = !audioPreview.paused && !audioPreview.ended;
+            const isCurrent = audioPreview.currentTime >= seg.start && audioPreview.currentTime <= seg.end;
+
+            if (isPlaying && isCurrent) {
+              audioPreview.pause();
+            } else {
+              audioPreview.currentTime = seg.start;
+              audioPreview.play();
+            }
+            updatePlaybackIcons();
+          });
+
+          segmentsContainer.appendChild(item);
+        });
+      } else {
+        segmentsContainer.innerHTML = `<div class="empty">No speech segments detected.</div>`;
+      }
+
+      resultsStudio.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Keep playhead, regions and segment rows in sync with the audio element
+    function updatePlaybackIcons() {
+      const isPlaying = !audioPreview.paused && !audioPreview.ended && audioPreview.currentTime > 0;
+      const currentTime = audioPreview.currentTime;
+      const totalDuration = (transcriptionData && Number(transcriptionData.duration)) || audioPreview.duration || 1;
+
+      const pct = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
+      timelinePlayhead.style.left = `${pct.toFixed(2)}%`;
+      timelineTimeDisplay.textContent = formatTime(currentTime);
+      timelineMasterPlayIcon.className = isPlaying ? PAUSE_ICON : PLAY_ICON;
+
+      let activeFound = false;
+      timelineTrack.querySelectorAll('.timeline-chunk').forEach(chunk => {
+        const s = parseFloat(chunk.dataset.start);
+        const e = parseFloat(chunk.dataset.end);
+        const isCurrent = currentTime >= s && currentTime <= e;
+        chunk.classList.toggle('active-chunk', isCurrent);
+        if (isCurrent) {
+          timelineActiveLabel.textContent = `Segment ${parseInt(chunk.dataset.idx) + 1}`;
+          activeFound = true;
+        }
+      });
+
+      if (!activeFound) {
+        timelineActiveLabel.textContent = isPlaying ? 'Playing' : 'Ready';
+      }
+
+      document.querySelectorAll('.segment-item').forEach(el => {
+        const start = parseFloat(el.dataset.start);
+        const end = parseFloat(el.dataset.end);
+        const icon = el.querySelector('.btn-play-pause i');
+        const isCurrent = currentTime >= start && currentTime <= end;
+        el.classList.toggle('active-segment', isCurrent);
+        if (icon) icon.className = isCurrent && isPlaying ? PAUSE_ICON : PLAY_ICON;
+      });
+    }
+
+    // Click-to-seek on the timeline
+    timelineTrack.addEventListener('click', (e) => {
+      const rect = timelineTrack.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const totalDuration = (transcriptionData && Number(transcriptionData.duration)) || audioPreview.duration || 1;
+      audioPreview.currentTime = ratio * totalDuration;
+      if (audioPreview.paused) audioPreview.play();
+      updatePlaybackIcons();
+    });
+
+    timelineTrackContainer.addEventListener('mouseleave', () => {
+      timelineTooltip.classList.remove('show');
+    });
+
+    timelineMasterPlayBtn.addEventListener('click', () => {
+      if (audioPreview.paused || audioPreview.ended) {
+        audioPreview.play();
+      } else {
+        audioPreview.pause();
+      }
+    });
+
+    audioPreview.addEventListener('timeupdate', updatePlaybackIcons);
+    audioPreview.addEventListener('play', updatePlaybackIcons);
+    audioPreview.addEventListener('pause', updatePlaybackIcons);
+    audioPreview.addEventListener('ended', () => {
+      updatePlaybackIcons();
+      document.querySelectorAll('.segment-item').forEach(el => {
+        el.classList.remove('active-segment');
+        const icon = el.querySelector('.btn-play-pause i');
+        if (icon) icon.className = PLAY_ICON;
+      });
+      timelineTrack.querySelectorAll('.timeline-chunk').forEach(c => c.classList.remove('active-chunk'));
+    });
+
+    // Copy full text
+    copyTextBtn.addEventListener('click', () => {
+      if (!transcriptionData || !transcriptionData.text) return;
+      navigator.clipboard.writeText(transcriptionData.text).then(() => {
+        const originalHtml = copyTextBtn.innerHTML;
+        copyTextBtn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+        setTimeout(() => copyTextBtn.innerHTML = originalHtml, 1800);
+      });
+    });
+
+    // Downloads
+    function downloadBlob(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function baseName() {
+      return (transcriptionData.filename || 'transcript').replace(/\.[^/.]+$/, '');
+    }
+
+    downloadTxtBtn.addEventListener('click', () => {
+      if (!transcriptionData) return;
+      downloadBlob(transcriptionData.text || '', `${baseName()}.txt`, 'text/plain');
+    });
+
+    downloadJsonBtn.addEventListener('click', () => {
+      if (!transcriptionData) return;
+      downloadBlob(JSON.stringify(transcriptionData, null, 2), `${baseName()}.json`, 'application/json');
+    });
+
+    downloadSrtBtn.addEventListener('click', () => {
+      if (!transcriptionData || !transcriptionData.segments) return;
+      let srt = '';
+      transcriptionData.segments.forEach((seg, i) => {
+        srt += `${i + 1}\n`;
+        srt += `${formatSrtTime(seg.start)} --> ${formatSrtTime(seg.end)}\n`;
+        srt += `${seg.text.trim()}\n\n`;
+      });
+      downloadBlob(srt, `${baseName()}.srt`, 'text/plain');
+    });
+  </script>
+</body>
+</html>

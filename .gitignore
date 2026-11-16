@@ -1,0 +1,72 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+
+# ---------- Virtual environments ----------
+.venv/
+venv/
+venv*/
+ENV/
+env/
+
+# ---------- Local configuration / secrets ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Runtime data ----------
+# Uploaded audio, transcripts, chunk files, SQLite DB (STORAGE_PATH)
+storage/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Pipeline output and temp directories
+out/
+tmp/
+temp/
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+dump.rdb
+
+# Logs
+*.log
+logs/
+
+# ---------- Models / caches ----------
+.cache/
+models/
+huggingface/
+
+# ---------- Testing & tooling ----------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# ---------- IDE / editor ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
