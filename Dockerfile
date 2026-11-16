@@ -1,4 +1,4 @@
-# Volga: one image used by both the API and the Celery worker.
+# One image used by both the API and the Celery worker.
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

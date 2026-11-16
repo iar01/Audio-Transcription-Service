@@ -3,13 +3,13 @@
 
 x-app: &app
   build: .
-  image: volga:latest
+  image: audio-transcription:latest
   env_file:
     - path: .env
       required: false
   environment:
     REDIS_URL: redis://redis:6379/0
-    DATABASE_URL: postgresql+psycopg://volga:volga@postgres:5432/volga
+    DATABASE_URL: postgresql+psycopg://transcriber:transcriber@postgres:5432/transcription
     STORAGE_PATH: /data/storage
     HF_HOME: /data/models
   volumes:
@@ -21,13 +21,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: volga
-      POSTGRES_PASSWORD: volga
-      POSTGRES_DB: volga
+      POSTGRES_USER: transcriber
+      POSTGRES_PASSWORD: transcriber
+      POSTGRES_DB: transcription
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U volga -d volga"]
+      test: ["CMD-SHELL", "pg_isready -U transcriber -d transcription"]
       interval: 5s
       timeout: 5s
       retries: 10
