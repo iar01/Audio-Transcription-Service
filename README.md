@@ -76,6 +76,66 @@ Supported formats: **WAV, MP3, M4A, FLAC and OGG**.
 
 ## Running it
 
+### With Docker (recommended)
+
+The only thing you need is [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine with the Compose plugin). Python, FFmpeg, Redis and PostgreSQL all run inside containers, so you don't need WSL or anything else installed.
+
+```bash
+git clone <repo-url> volga
+cd volga
+docker compose up --build
+```
+
+Open `http://localhost:8000`. The first transcription takes longer because the Whisper model is downloaded once and cached.
+
+This starts four containers:
+
+| Service | What it is |
+|---|---|
+| `api` | FastAPI app and web UI on port 8000 |
+| `worker` | Celery worker running faster-whisper |
+| `redis` | Job queue |
+| `postgres` | Database |
+
+Data survives restarts in Docker volumes (`pgdata`, `redisdata`, `storage`, `models`).
+
+Useful commands:
+
+```bash
+docker compose up -d --build                  # run in the background
+docker compose logs -f worker                 # follow worker logs
+docker compose up -d --scale worker=3         # run 3 workers in parallel
+docker compose exec api python manage.py cleanup   # delete old jobs
+docker compose exec api pytest tests/         # run the tests
+docker compose down                           # stop (keeps data)
+docker compose down -v                        # stop and delete all data
+```
+
+**Configuration.** To change settings, run `cp .env.example .env` and edit `.env`; Compose picks it up automatically. To use a different host port, set `API_PORT=8080` in `.env`.
+
+**Redis and database URLs.** Inside Docker, Compose always sets these, so the values in your `.env` are ignored there:
+
+```
+REDIS_URL=redis://redis:6379/0
+DATABASE_URL=postgresql+psycopg://volga:volga@postgres:5432/volga
+```
+
+`redis` and `postgres` are the container names on Compose's private network (inside a container, `localhost` means the container itself). Your `.env` can keep `localhost` values for running without Docker. Postgres and Redis aren't exposed on your machine's ports. The default password `volga` is for local use only; change it in `docker-compose.yml` before deploying anywhere public.
+
+**Database and tables.** Both are created automatically, so there's nothing to set up:
+
+- On first start, the `postgres` container creates the `volga` user and database from `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`.
+- When the `api` container starts, it creates any missing tables. Restarts never wipe data. The worker waits for the API, so the tables exist before any job runs.
+
+```bash
+docker compose exec api python manage.py init-db                 # create tables by hand (optional)
+docker compose exec postgres psql -U volga -d volga -c "\dt"     # list tables
+```
+
+There are no migrations: changing a model in `database/models.py` doesn't change existing tables. Changing the `POSTGRES_*` login also only takes effect on an empty volume. In both cases, reset with `docker compose down -v` (this deletes all data) and run `docker compose up --build`.
+
+### Without Docker
+
 You need Python 3.12, FFmpeg and Redis. On Windows, run Redis through WSL, Memurai or Docker.
 
 ```bash
@@ -85,6 +145,8 @@ cp .env.example .env
 uvicorn app:app --port 8000                                   # API + web UI
 celery -A workers.celery_app worker --loglevel=INFO --pool=solo   # worker (second terminal)
 ```
+
+With `DATABASE_URL` empty, a SQLite database is created at `storage/volga.db` and its tables are created when the API starts (or with `python manage.py init-db`). To use PostgreSQL instead, create the database yourself and set `DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/volga`.
 
 Open `http://127.0.0.1:8000`. To transcribe more jobs at once, start more workers: `-n worker2@%h`, `-n worker3@%h` and so on.
 
